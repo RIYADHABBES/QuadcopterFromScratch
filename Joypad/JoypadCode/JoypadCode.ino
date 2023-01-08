@@ -8,8 +8,8 @@
 #include <RF24.h>                                                                   // Radio driver, OSI layer 2 library for nrf24L01(+) modules.
 #include <Wire.h>                                                                   // communicate with I2C/TWI devices
 // Define the digital inputs
-#define jB1 1  // Joystick button 1
-#define jB2 0  // Joystick button 2
+#define jB1 0  // Joystick button 1
+#define jB2 1  // Joystick button 2
 #define t1 7   // Toggle switch 1
 #define t2 4   // Toggle switch 2
 #define b1 8   // Button 1
