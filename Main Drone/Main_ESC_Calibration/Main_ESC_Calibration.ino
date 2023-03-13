@@ -90,7 +90,13 @@
 // type of signals that are used to control servomotors.
 #include <Servo.h>
 
-Servo motor;	// we declare a 'variable' motor of type "Servo" (it is an object instance)
+Servo motor1, motor2, motor3, motor4;	// we declare a 'variable' motor of type "Servo" (it is an object instance)
+#define MOTOR1_PIN 5
+#define MOTOR2_PIN 6
+#define MOTOR3_PIN 9
+#define MOTOR4_PIN 3
+#define GAS_MAX 180
+#define GAS_MIN 0
 char data;		// variable of type "char" which will make it possible to read a character typed on the keyboard
 
 
@@ -102,9 +108,7 @@ void setup() // initialization routine
 {
     Serial.begin(9600);	// initialization of the serial communication with the computer at 9600 bauds
 
-    motor.attach(4, 1000, 2000); // ESC control on pin 4, min and max PWM durations : 1000us and 2000us
-
-    motor.write(180); // send GAS MAX command (180 corresponds to pulses of 2ms duration)
+    setupMotors();
 
     displayInstructions();	// function that displays user instructions in the serial monitor 
 }
@@ -126,13 +130,19 @@ void loop() // main program loop
         {
             // v' for "validation" : sending a maximum command
             case 118 : Serial.println("Sending MINI GAS command");
-                       motor.write(0);            
+                       motor1.write(GAS_MIN); 
+                       motor2.write(GAS_MIN);
+                       motor3.write(GAS_MIN); 
+                       motor4.write(GAS_MIN);             
                      
             break;
 
             // m' for "maximum" : sending a minimum command
             case 109 : Serial.println("Sending MAX GAS command");
-                       motor.write(180);            
+                       motor1.write(GAS_MAX);
+                       motor2.write(GAS_MAX);
+                       motor3.write(GAS_MAX);
+                       motor4.write(GAS_MAX);            
                      
             break;
 
@@ -164,24 +174,33 @@ void loop() // main program loop
 //#####################################################
 void ESC_test()
 {
-    for (int i=0; i<=180; i++) 
+    for (int i = GAS_MIN ; i <= GAS_MAX ; i++) 
     {
         Serial.print("Speed = ");
         Serial.println(i);
-        motor.write(i);        
+        motor1.write(i);
+        motor2.write(i);
+        motor3.write(i);
+        motor4.write(i);        
         delay(10);
     }
     
-    for (int i=180; i>=0; i--) 
+    for (int i = GAS_MAX ; i >= GAS_MIN ; i--) 
     {
         Serial.print("Speed = ");
         Serial.println(i);
-        motor.write(i);        
+        motor1.write(i); 
+        motor2.write(i); 
+        motor3.write(i); 
+        motor4.write(i);        
         delay(10);
     }
 
     Serial.println("STOP");
-    motor.write(0);
+    motor1.write(GAS_MIN);
+    motor2.write(GAS_MIN);
+    motor3.write(GAS_MIN);
+    motor4.write(GAS_MIN);
 }
 
 //#####################################################
@@ -207,4 +226,23 @@ void displayInstructions()
     Serial.println("that the calibration is done.");
     Serial.println("Start a test in variable speed by typing in the serial monitor the letter");
     Serial.println("\"t\" then \"enter\".\n");    
+}
+
+
+
+//  Riyadh Code
+
+void setupMotors()
+{
+  motor1.attach(MOTOR1_PIN, 1000, 2000); // ESC control on pin x, min and max PWM durations : 1000us and 2000us
+  motor1.write(GAS_MAX); // send GAS MAX command (180 corresponds to pulses of 2ms duration)
+
+  motor2.attach(MOTOR2_PIN, 1000, 2000);
+  motor2.write(GAS_MAX);
+
+  motor3.attach(MOTOR3_PIN, 1000, 2000);
+  motor3.write(GAS_MAX);
+
+  motor4.attach(MOTOR4_PIN, 1000, 2000);
+  motor4.write(GAS_MAX);
 }
