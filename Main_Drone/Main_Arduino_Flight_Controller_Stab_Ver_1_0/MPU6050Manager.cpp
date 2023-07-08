@@ -34,13 +34,21 @@ static constexpr float SF_Accel = 4096; // accelerometer scale factor
 static constexpr int stabilization_coeff = 3.0;  // attitude correction coefficient, 3.00 is a good value
 
 MPU6050Manager::MPU6050Manager(){
+  
+  initializeMPU6050();
+
+  calibrateMPU6050();
+
+  readMPU6050();
 
 }
 void MPU6050Manager::initializeMPU6050(){
 
+    Serial.println("MPU6050 initialization began ...");
     // opening the I2C line as master
     Wire.begin(); 
     
+    // Serial.println("1");
     // setting the I2C clock to 400kHz instead of the default 100kHz
     TWBR = 12; 
 
@@ -49,35 +57,41 @@ void MPU6050Manager::initializeMPU6050(){
     Wire.write(0x6B);                     // register PWR_MGMT_1
     Wire.write(0x00);                     // 8MHz internal clock                 
     Wire.endTransmission();               // end of transmission
-  
+  // Serial.println("2");
     // gyroscope scale configuration
     Wire.beginTransmission(MPU_ADDRESS); 
     Wire.write(0x1B);                     // register GYRO_CONFIG
     Wire.write(0x08);                     // range ±500°/s
     Wire.endTransmission();  
   
+  // Serial.println("3");
   
     // accelerometer scale configuration
     Wire.beginTransmission(MPU_ADDRESS); 
     Wire.write(0x1C);                    // register ACCEL_CONFIG
     Wire.write(0x10);                    // range ±8g
     Wire.endTransmission(); 
+  // Serial.println("4");
   
     // low-pass filter configuration
     Wire.beginTransmission(MPU_ADDRESS); 
     Wire.write(0x1A);                     // register CONFIG 
     Wire.write(0x03);                     // cut-off at ~43Hz
     Wire.endTransmission(); 
+ // Serial.println("5");
 
     delay(250);               // allow time for the MPU-6050 to start up
 
+Serial.println("MPU6050 had been initialized !");
 }
 
 void MPU6050Manager::calibrateMPU6050(){
+ Serial.println("MPU6050 Calibration began ...");
  int nb_values = 2000;
 
     for (int i = 0; i < nb_values; i++) 
     {
+      Serial.println(i);
         // the LED is flashing rapidly during calibration
         // to do this, we make it change state every 20 iterations of the "for" loop.
         if(i % 20 == 0) digitalWrite(LED, !digitalRead(LED));   
@@ -142,8 +156,9 @@ void MPU6050Manager::calibrateMPU6050(){
     m_accel_offset[Z] /= nb_values;
     // centering on 4096
     m_accel_offset[Z] -= 4096;
-    
-    }
+
+Serial.println("MPU6050 had been calibrated !");    
+}
 
 
 
@@ -280,14 +295,16 @@ void MPU6050Manager::calculateAnglesFusion()
         m_roll_adjustment = 0;   // sets the roll angle correction to zero 
         m_pitch_adjustment = 0;  // sets the pitch angle correction to zero        
     }
-    
-    Serial.print("Velocity Gyro Roll : ");
-    Serial.print(m_gyro[ROLL]);
-    Serial.print("    Velocity Gyro Pitch ");
-    Serial.print(m_gyro[PITCH]);
-    Serial.print(" Angle Roll : ");
-    Serial.print(m_angle[ROLL]);
-    Serial.print("    Angle Pitch ");
-    Serial.println(m_angle[PITCH]);
 }
 
+void MPU6050Manager::printAngles(){
+
+  Serial.print("ROLL:");
+  Serial.print(m_angle[ROLL]);
+  Serial.print(",");
+  Serial.print("PITCH:");
+  Serial.print(m_angle[PITCH]);
+  Serial.print(",");
+  Serial.print("YAW:");
+  Serial.println(m_angle[YAW]);
+}

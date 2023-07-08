@@ -11,19 +11,23 @@ public:
   MPU6050Manager();
   void set_dT(const unsigned long dT){ m_dT = dT; }
 
+  void calculateAnglesFusion(); // calculation of Roll and Pitch angles by "Sensor Fusion"    
+
+  void readMPU6050();      // reading MPU6050 data
+
+  void printAngles();
 private:
 
   void initializeMPU6050(); // MPU6050 circuit initialization function by I2C
 
   void calibrateMPU6050();  // MPU6050 calibration function : calculation of gyroscope and accelerometer offsets
 
-  void readMPU6050();      // reading MPU6050 data
+  
 
-  void calculateAnglesFusion(); // calculation of Roll and Pitch angles by "Sensor Fusion"    
-
+ 
 // Attributes 
 
-/*Needed*/unsigned long m_dT; // variable for calculating the elapsed time between 2 MPU6050 readings
+/*Needed*/unsigned long m_dT = 1; // variable for calculating the elapsed time between 2 MPU6050 readings
   int m_temperature = 0;
 
   int m_accel_raw[3] = {0,0,0};  // // table of raw accelerations
