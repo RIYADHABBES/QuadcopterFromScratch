@@ -91,7 +91,7 @@ void MPU6050Manager::calibrateMPU6050(){
 
     for (int i = 0; i < nb_values; i++) 
     {
-      Serial.println(i);
+     // Serial.println(i);
         // the LED is flashing rapidly during calibration
         // to do this, we make it change state every 20 iterations of the "for" loop.
         if(i % 20 == 0) digitalWrite(LED, !digitalRead(LED));   
@@ -295,6 +295,21 @@ void MPU6050Manager::calculateAnglesFusion()
         m_roll_adjustment = 0;   // sets the roll angle correction to zero 
         m_pitch_adjustment = 0;  // sets the pitch angle correction to zero        
     }
+}
+
+float const * const MPU6050Manager::getGyro() const 
+{
+  return m_gyro;
+}
+
+
+float MPU6050Manager::getRollAdjustment() const
+{
+  return m_roll_adjustment;
+}
+float MPU6050Manager::getPitchAdjustment() const
+{
+  return m_pitch_adjustment;
 }
 
 void MPU6050Manager::printAngles(){

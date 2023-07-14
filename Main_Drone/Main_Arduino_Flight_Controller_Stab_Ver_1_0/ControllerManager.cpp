@@ -12,6 +12,12 @@
 #define ESC3 2    // ESC3 equals 2
 #define ESC4 3    // ESC4 equals 3
 
+
+
+ControllerManager::ControllerManager()
+{
+  
+}
 //##########################################################
 //  Reset function for variables used to calculate PID
 //  corrections.
@@ -100,7 +106,7 @@ void ControllerManager::calculatePIDCommands()
     // ROLL error calculation
     //-------------------------
     
-    m_error[ROLL] = m_setpoint[ROLL] - m_angle[ROLL] ;
+    m_error[ROLL] = m_setpoint[ROLL] - m_gyro[ROLL] ;
 
     //---------------------------------------------
     // calculation of the ROLL proportional action 
@@ -146,7 +152,7 @@ void ControllerManager::calculatePIDCommands()
     // PITCH error calculation
     //--------------------------
     
-    m_error[PITCH] = m_setpoint[PITCH] - m_angle[PITCH] ;
+    m_error[PITCH] = m_setpoint[PITCH] - m_gyro[PITCH] ;
 
     //----------------------------------------------
     // calculation of the proportional action PITCH
@@ -193,7 +199,7 @@ void ControllerManager::calculatePIDCommands()
     // YAW error calculation
     //------------------------
    
-    m_error[YAW] = m_setpoint[YAW] - m_angle[YAW] ;
+    m_error[YAW] = m_setpoint[YAW] - m_gyro[YAW] ;
 
     //-------------------------------------------
     // calculation of proportional action in YAW
@@ -291,6 +297,16 @@ void ControllerManager::calculateESCPulses()
     m_ESC_pulse_duration[ESC2] = limit(m_ESC_pulse_duration[ESC2], 1100, 2000);
     m_ESC_pulse_duration[ESC3] = limit(m_ESC_pulse_duration[ESC3], 1100, 2000);
     m_ESC_pulse_duration[ESC4] = limit(m_ESC_pulse_duration[ESC4], 1100, 2000);
+
+    Serial.print(" ESC1: ");
+    Serial.print(m_ESC_pulse_duration[ESC1]);
+    Serial.print(" ESC2: ");
+    Serial.print(m_ESC_pulse_duration[ESC2]);
+    Serial.print(" ESC3: ");
+    Serial.print(m_ESC_pulse_duration[ESC3]);
+    Serial.print(" ESC4: ");
+    Serial.print(m_ESC_pulse_duration[ESC4]);
+    Serial.println(" ");
 }
 
 //##################################################################

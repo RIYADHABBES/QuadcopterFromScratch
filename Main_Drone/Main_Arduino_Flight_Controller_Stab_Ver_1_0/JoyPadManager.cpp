@@ -1,20 +1,36 @@
 #include "JoyPadManager.h"
 
 #include <Arduino.h>
+//#include <nRF24L01.h>    
+//#include <RF24.h>    
 
 #define ROLL  0     // ROLL equals 0
 #define PITCH 1     // PITCH equals 1
 #define YAW   2     // YAW equals 2
 #define GAS   3     // GAS equals 3
 
-
-#define CHANNEL1 0    // CHANNEL1 equals 0 (ROLL control)
-#define CHANNEL2 1    // CHANNEL2 equals 1 (PITCH control)
-#define CHANNEL3 2    // CHANNEL3 equals 2 (GAS control)
-#define CHANNEL4 3    // CHANNEL4 equals 3 (YAW control)
-
 #define LED 13    // LED equals 13 Built-in Nano board LED
 
+const byte address[6] = "00001";
+
+JoyPadManager::JoyPadManager()
+{
+  m_radio = new RF24(7, 8);//(10, 9);
+  initializeReceiver();
+  resetData();   
+  readRadio();
+}
+void JoyPadManager::initializeReceiver()
+{
+  Serial.println("Initializing Receiver ...");
+  m_radio->begin();
+  m_radio->openReadingPipe(0, address);
+  m_radio->setAutoAck(false);
+  m_radio->setDataRate(RF24_250KBPS);
+  m_radio->setPALevel(RF24_PA_LOW);
+  m_radio->startListening(); //  Set the module as receiver  
+  Serial.println("End Initializing Receiver.");
+}
 //##############################################################################
 //  Waiting function for "safety" positioning of the left joystick (mode 2) 
 //  i.e. the left joystick positioned at the bottom left.
@@ -37,9 +53,9 @@ void JoyPadManager::waitMinGas()
         //
         // we stay in the "while" security loop as long as :
         //
-        //      - the GAS control is not in low position ("pulse_duration[CHANNEL3]" between 990 and 1020) 
+        //      - the GAS control is not in low position ("pulse_duration[GAS]" between 990 and 1020) 
         // 
-        //      - with the median YAW command ("pulse_duration[CHANNEL4]" between 1450 and 1550)                                         
+        //      - with the median YAW command ("pulse_duration[YAW]" between 1450 and 1550)                                         
         //
         // Reminder of the channels :
         //
@@ -61,7 +77,7 @@ void JoyPadManager::waitMinGas()
 
         // loop as long as the throttle control is above the minimum (with Yaw control in the center)
 		
-        while(m_pulse_duration[CHANNEL3] <990 || m_pulse_duration[CHANNEL3] > 1020 || m_pulse_duration[CHANNEL4] < 1450 || m_pulse_duration[CHANNEL4] > 1550 )   // boucle tant que la commande des GAS est supérieure au minimum      
+        while(m_pulse_duration[GAS] <990 || m_pulse_duration[GAS] > 1020 || m_pulse_duration[YAW] < 1450 || m_pulse_duration[YAW] > 1550 )   // boucle tant que la commande des GAS est supérieure au minimum      
         {
               cpt ++; // the variable "cpt" is incremented at each pass in the loop
               
@@ -97,7 +113,7 @@ void JoyPadManager::waitMinGas()
 //  - no value returned
 //
 //####################################################################
-void JoyPadManager::calculateSetpoints()
+void JoyPadManager::calculateSetpoints(float rollAdjustment, float pitchAdjustment)
 {
     // calculation of PIDs set points
 
@@ -134,13 +150,13 @@ void JoyPadManager::calculateSetpoints()
 
     m_setpoint[ROLL] = 0;
     
-    if(m_pulse_duration[CHANNEL1] > 1508)
+    if(m_pulse_duration[ROLL] > 1508)
     {
-          m_setpoint[ROLL] = 0.244*m_pulse_duration[CHANNEL1] - 367.80;
+          m_setpoint[ROLL] = 0.244*m_pulse_duration[ROLL] - 367.80;
     }
-    else if(m_pulse_duration[CHANNEL1] < 1492)
+    else if(m_pulse_duration[ROLL] < 1492)
     {
-          m_setpoint[ROLL] = 0.244*m_pulse_duration[CHANNEL1] - 363,90;
+          m_setpoint[ROLL] = 0.244*m_pulse_duration[ROLL] - 363,90;
     }
 
     //########################
@@ -150,13 +166,13 @@ void JoyPadManager::calculateSetpoints()
     m_setpoint[PITCH] = 0;
 
     // the PITCH command has a negative slope because a PITCH command lower than 1492us must raise the nose of the UAV
-    if(m_pulse_duration[CHANNEL2] > 1508)
+    if(m_pulse_duration[PITCH] > 1508)
     {	 
-          m_setpoint[PITCH] = -0.244*m_pulse_duration[CHANNEL2] + 367.80;
+          m_setpoint[PITCH] = -0.244*m_pulse_duration[PITCH] + 367.80;
     }
-    else if(m_pulse_duration[CHANNEL2] < 1492)
+    else if(m_pulse_duration[PITCH] < 1492)
     {
-		  m_setpoint[PITCH] = -0.244*m_pulse_duration[CHANNEL2] + 363.90;
+		  m_setpoint[PITCH] = -0.244*m_pulse_duration[PITCH] + 363.90;
     }
 
     //######################
@@ -165,17 +181,17 @@ void JoyPadManager::calculateSetpoints()
 
     m_setpoint[YAW] = 0;
 
-    if(m_pulse_duration[CHANNEL3] > 1050)    // the YAW setpoint is only calculated if the GAS control is non-zero, otherwise
+    if(m_pulse_duration[GAS] > 1050)    // the YAW setpoint is only calculated if the GAS control is non-zero, otherwise
     {                                     // when you want to switch to the "STOP" state, the motors accelerate 
       
 
-        if(m_pulse_duration[CHANNEL4] > 1508)
+        if(m_pulse_duration[YAW] > 1508)
         {
-              m_setpoint[YAW] = 0.244*m_pulse_duration[CHANNEL4] - 367.80;
+              m_setpoint[YAW] = 0.244*m_pulse_duration[YAW] - 367.80;
         }
-        else if(m_pulse_duration[CHANNEL4] < 1492)
+        else if(m_pulse_duration[YAW] < 1492)
         {
-              m_setpoint[YAW] = 0.244*m_pulse_duration[CHANNEL4] - 363,90;
+              m_setpoint[YAW] = 0.244*m_pulse_duration[YAW] - 363,90;
         }
 
     }
@@ -186,15 +202,15 @@ void JoyPadManager::calculateSetpoints()
   
     // correction of Roll and Pitch angular speed setpoints to ensure Self-Level
 
-  // In Both setpoint[ROLL] -= MPU6050Manager::roll_adjustment;
-   // In Both setpoint[PITCH] -= MPU6050Manager::pitch_adjustment;
+  m_setpoint[ROLL] -= rollAdjustment;
+  m_setpoint[PITCH] -= pitchAdjustment;
     
 
     //######################
     //#### GAS setpoint ####
     //######################
 
-    m_setpoint[GAS] = m_pulse_duration[CHANNEL3];  // the GAS set point is the copy of Channel 3
+    m_setpoint[GAS] = m_pulse_duration[GAS];  // the GAS set point is the copy of Channel 3
 
     if (m_setpoint[GAS] > 1700) m_setpoint[GAS] = 1700; // we limit the GAS value, because PID corrections will be added to it
                                                     // to give the ESC pulse durations, without this limit the PID correction
@@ -212,169 +228,94 @@ void JoyPadManager::calculateSetpoints()
 //  The calculated PWM pulse durations are placed in the
 //  global variables :
 //  
-//        - pulse_duration[CHANNEL1]
+//        - pulse_duration[ROLL]
 //
-//        - pulse_duration[CHANNEL2]
+//        - pulse_duration[PITCH]
 //
-//        - pulse_duration[CHANNEL3]
+//        - pulse_duration[GAS]
 //
-//        - pulse_duration[CHANNEL4]
+//        - pulse_duration[YAW]
 //        
 //  - no input parameter
 //
 //  - no value returned
 //
 //##########################################################
-void JoyPadManager::I_R(/*PCINT0_vect*/) 
+void JoyPadManager::readRadio() 
 {
-   m_current_time = micros();
-   
-   //########################
-   // treatment of channel 1
-   //########################
-   if (PINB & B00000001) // if pin 8 is "HIGH"
-   {                                       
-       // we test if the memorized state of pin 8 was "LOW"
-       if (m_ch_status_storage[CHANNEL1] == LOW) 
-       {                     
+    // Check whether there is data to be received
+  if (m_radio->available()) {
+    m_radio->read(&m_data, sizeof(Data_Package)); // Read the whole data and store it into the 'data' structure
+    m_lastReceiveTime = millis(); // At this moment we have received the data
+  }
+  // Check whether we keep receving data, or we have a connection between the two modules
+  m_current_time = millis();
+  if ( m_current_time - m_lastReceiveTime > 3000 ) { // If current time is more then 1 second since we have recived the last data, that means we have lost connection
+    resetData(); // If connection is lost, reset the data. It prevents unwanted behavior, for example if a drone has a throttle up and we lose connection, it can keep flying unless we reset the values
+   // Serial.print("/!!!!!!!! DATA RESET\n");
+  }
 
-          // then pin 8 made a rising edge
+  m_pulse_duration[ROLL] = map(m_data.j2PotY, 0, 255, 1000, 2000);
+  m_pulse_duration[PITCH] = map(m_data.j2PotX, 0, 255, 1000, 2000);  
+  m_pulse_duration[YAW] = map(m_data.j1PotX, 0, 255, 1000, 2000);
+  m_pulse_duration[GAS] = map(m_data.j1PotY, 0, 255, 1000, 2000);
+}
 
-          // the memory variable of pin 8 state is updated
+void JoyPadManager::printData()
+{
+ // Print the data in the Serial Monitor
+  Serial.print("j1PotX: ");
+  Serial.print(m_data.j1PotX);
+  Serial.print("; j1PotY: ");
+  Serial.print(m_data.j1PotY);
+  Serial.print("; button1: ");
+  Serial.print(m_data.button1);
+  Serial.print("; j2PotX: ");
+  Serial.print(m_data.j2PotX); 
+  Serial.print("; j2PotY: ");
+  Serial.print(m_data.j2PotY); 
+  Serial.println(" ");
+}
 
-          m_ch_status_storage[CHANNEL1] = HIGH;
-  
-          // we memorize the moment of this rising edge
+float const * const JoyPadManager::getSetPoints() const
+{
+  return m_setpoint;
+}
 
-          m_pulse_start_t[CHANNEL1] = m_current_time;                        
-       }
-   } 
-
-   // otherwise if pin 8 is at "LOW" and the storage of the state
-   // of pin 8 is at "HIGH"
-
-   else if (m_ch_status_storage[CHANNEL1] == HIGH) 
-  
-   {   // pin 8 went from "1" to "0" (falling edge)
-       // the memory variable of pin 8 state is updated
-
-       m_ch_status_storage[CHANNEL1] = LOW; 
-
-
-       // PWM pulse duration is calculated
-
-       m_pulse_duration[CHANNEL1] = m_current_time-m_pulse_start_t[CHANNEL1];   
-   }
-
-   //########################
-   // treatment of channel 2
-   //########################
-   if (PINB & B00000010) // if pin 9 is "HIGH"
-   {                                       
-       // we test if the memorized state of pin 9 was "LOW"
-       if (m_ch_status_storage[CHANNEL2] == LOW) 
-       {                     
-
-          // then pin 9 made a rising edge
-
-          // the memory variable of pin 9 state is updated
-
-          m_ch_status_storage[CHANNEL2] = HIGH;
-  
-          // we memorize the moment of this rising edge
-
-          m_pulse_start_t[CHANNEL2] = m_current_time;                        
-       }
-   } 
-
-   // otherwise if pin 9 is at "LOW" and the storage of the state
-   // of pin 9 is at "HIGH"
-
-   else if (m_ch_status_storage[CHANNEL2] == HIGH) 
-  
-   {   // pin 9 went from "1" to "0" (falling edge)
-       // the memory variable of pin 9 state is updated
-
-       m_ch_status_storage[CHANNEL2] = LOW; 
+byte JoyPadManager::getButton1() const
+{
+  return m_data.button1;
+}
+void JoyPadManager::printSetPoints()
+{
+ // Print the set points in the Serial Monitor
+  Serial.print("Set Point:  ROLL: ");
+  Serial.print(m_setpoint[ROLL]);
+  Serial.print("; PITCH: ");
+  Serial.print(m_setpoint[PITCH]);
+  Serial.print("; GAS: ");
+  Serial.print(m_setpoint[GAS]);
+  Serial.print("; YAW: ");
+  Serial.print(m_setpoint[YAW]);
+  Serial.println(" ");
 
 
-       // PWM pulse duration is calculated
+}
 
-       m_pulse_duration[CHANNEL2] = m_current_time-m_pulse_start_t[CHANNEL2];   
-   }
-
-   //########################
-   // treatment of channel 3
-   //########################
-   if (PINB & B00000100) // if pin 10 is "HIGH"
-   {                                       
-       // we test if the memorized state of pin 10 was "LOW"
-       if (m_ch_status_storage[CHANNEL3] == LOW) 
-       {                     
-
-          // // then pin 10 made a rising edge
-
-          // the memory variable of pin 10 state is updated
-
-          m_ch_status_storage[CHANNEL3] = HIGH;
-  
-          // we memorize the moment of this rising edge
-
-          m_pulse_start_t[CHANNEL3] = m_current_time;                        
-       }
-   } 
-
-   // otherwise if pin 10 is at "LOW" and the storage of the state
-   // of pin 10 is at "HIGH"
-
-   else if (m_ch_status_storage[CHANNEL3] == HIGH) 
-  
-   {   // pin 10 went from "1" to "0" (falling edge)
-       // the memory variable of pin 10 state is updated
-
-       m_ch_status_storage[CHANNEL3] = LOW; 
-
-
-       // PWM pulse duration is calculated
-
-       m_pulse_duration[CHANNEL3] = m_current_time-m_pulse_start_t[CHANNEL3];   
-   }
-
-   //########################
-   // treatment of channel 4
-   //########################
-   if (PINB & B00001000) //  if pin 11 is "HIGH"
-   {                                       
-       // // we test if the memorized state of pin 11 was "LOW" 
-       if (m_ch_status_storage[CHANNEL4] == LOW) 
-       {                     
-
-          // then pin 11 made a rising edge
-
-          // the memory variable of pin 11 state is updated
-
-          m_ch_status_storage[CHANNEL4] = HIGH;
-  
-          // we memorize the moment of this rising edge
-
-          m_pulse_start_t[CHANNEL4] = m_current_time;                        
-       }
-   } 
-
-   // otherwise if pin 11 is at "LOW" and the storage of the state
-   // of pin 11 is at "HIGH"
-
-   else if (m_ch_status_storage[CHANNEL4] == HIGH) 
-  
-   {   // pin 11 went from "1" to "0" (falling edge)
-       // the memory variable of pin 11 state is updated
-
-       m_ch_status_storage[CHANNEL4] = LOW; 
-
-
-       // PWM pulse duration is calculated
-
-       m_pulse_duration[CHANNEL4] = m_current_time-m_pulse_start_t[CHANNEL4];   
-   }
-   
+void JoyPadManager::resetData() {
+  // Reset the values when there is no radio connection - Set initial default values
+  m_data.j1PotX = 127;
+  m_data.j1PotY = 127;
+  m_data.j2PotX = 127;
+  m_data.j2PotY = 127;
+  m_data.j1Button = 1;
+  m_data.j2Button = 1;
+  m_data.pot1 = 1;
+  m_data.pot2 = 1;
+  m_data.tSwitch1 = 1;
+  m_data.tSwitch2 = 1;
+  m_data.button1 = 1;
+  m_data.button2 = 1;
+  m_data.button3 = 1;
+  m_data.button4 = 1;
 }

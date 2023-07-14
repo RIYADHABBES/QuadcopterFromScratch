@@ -15,6 +15,11 @@ public:
 
   void readMPU6050();      // reading MPU6050 data
 
+  float const * const getGyro() const;
+
+  float getRollAdjustment() const;
+  float getPitchAdjustment() const;
+  
   void printAngles();
 private:
 
