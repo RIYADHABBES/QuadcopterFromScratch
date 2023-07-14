@@ -44,7 +44,7 @@ struct Data_Package {
   byte button4;
 };
 Data_Package data; //Create a variable with the above structure
-void setup() {
+void setup(int a) {
   Serial.begin(9600);
   
   // Initialize interface to the MPU6050
@@ -85,10 +85,10 @@ void setup() {
   data.button3 = 1;
   data.button4 = 1;
 }
-void loop() {
+void loop(int a) {
   // Read all analog inputs and map them to one Byte value
-  data.j1PotX = map(analogRead(A1), 0, 1023, 0, 255); // Convert the analog read value from 0 to 1023 into a BYTE value from 0 to 255
-  data.j1PotY = map(analogRead(A0), 0, 1023, 0, 255);
+  data.j1PotX = map(analogRead(A0), 0, 1023, 0, 255); // Convert the analog read value from 0 to 1023 into a BYTE value from 0 to 255
+  data.j1PotY = map(analogRead(A1), 0, 1023, 0, 255);
   data.j2PotX = map(analogRead(A2), 0, 1023, 0, 255);
   data.j2PotY = map(analogRead(A3), 0, 1023, 0, 255);
   data.pot1 = map(analogRead(A7), 0, 1023, 0, 255);
