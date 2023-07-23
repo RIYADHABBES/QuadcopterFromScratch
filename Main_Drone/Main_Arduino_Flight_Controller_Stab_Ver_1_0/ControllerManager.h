@@ -1,20 +1,21 @@
 #ifndef CONTROLLERMANAGER_H
 #define CONTROLLERMANAGER_H
 
+#include <Servo.h>
 
 class ControllerManager{
   public:
 
     ControllerManager();
 
-  void setSetPoints(float* setpoint)
+  void setSetPoints(const float* setpoint)
   {
     m_setpoint[0] = setpoint[0];
     m_setpoint[1] = setpoint[1];
     m_setpoint[2] = setpoint[2];
     m_setpoint[3] = setpoint[3];
   }
-  void setGyro(float* gyro)
+  void setGyro(const float* gyro)
   {
     m_gyro[0] = gyro[0];
     m_gyro[1] = gyro[1];
@@ -25,27 +26,24 @@ class ControllerManager{
   void calculateESCPulses();    // calculation of PWM pulse durations to be sent to the ESCs
   void generateESCPulses();     // generation of ESC pulses and reading of MPU-6050 measurements
 
+  void stopMotors();            // sets the pulse duration of the ESCs to 1000 (minimum value)
 
   private:
 
-  
+  void resetPIDControllers();   // resetting the variables used to calculate PID corrections to zero
+
+  float limit(float value, float min_value, float max_value); // function to limit a "float" type quantity between 2 values
 
 
-void resetPIDControllers();   // resetting the variables used to calculate PID corrections to zero
+  Servo m_ESC1 , m_ESC2 , m_ESC3 , m_ESC4;     // create servo object to control the ESC
 
-void stopMotors();            // sets the pulse duration of the ESCs to 1000 (minimum value)
-
-
-float limit(float value, float min_value, float max_value); // function to limit a "float" type quantity between 2 values
-
-
-float m_setpoint[4] = {0,0,0,0};
-float m_gyro[3] = {0,0,0};
+  float m_setpoint[4] = {0,0,0,0};
+  float m_gyro[3] = {0,0,0};
 //--------------------------------------------------------------------------
 // variables used to calculate the elapsed time between 2 MPU6050 readings
 //--------------------------------------------------------------------------
 
-unsigned long m_time_storage; // memorization variable of the present moment
+  unsigned long m_time_storage; // memorization variable of the present moment
 
 //\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 //\\\\                   PID SETTING PARAMETERS                    \\\\          

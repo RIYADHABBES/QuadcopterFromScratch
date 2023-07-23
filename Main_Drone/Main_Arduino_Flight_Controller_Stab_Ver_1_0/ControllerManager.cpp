@@ -16,7 +16,10 @@
 
 ControllerManager::ControllerManager()
 {
-  
+  m_ESC1.attach(5,1000,2000); // (pin, min pulse width, max pulse width in microseconds) 
+  m_ESC2.attach(6,1000,2000);
+  m_ESC3.attach(9,1000,2000);
+  m_ESC4.attach(3,1000,2000);
 }
 //##########################################################
 //  Reset function for variables used to calculate PID
@@ -82,6 +85,12 @@ void ControllerManager::stopMotors()
     m_ESC_pulse_duration[ESC2] = 1000;
     m_ESC_pulse_duration[ESC3] = 1000;
     m_ESC_pulse_duration[ESC4] = 1000;
+
+  m_ESC1.write(map(m_ESC_pulse_duration[ESC1], 1000, 2000 , 0 , 180));    // Send the signal to the ESC
+  m_ESC2.write(map(m_ESC_pulse_duration[ESC2], 1000, 2000 , 0 , 180));    // scale it to use it with the servo library (value between 0 and 180)
+  m_ESC3.write(map(m_ESC_pulse_duration[ESC3], 1000, 2000 , 0 , 180));
+  m_ESC4.write(map(m_ESC_pulse_duration[ESC4], 1000, 2000 , 0 , 180));
+  Serial.println("Stop motors");
 }
 //#########################################
 //  PID commands calculation function
@@ -297,7 +306,7 @@ void ControllerManager::calculateESCPulses()
     m_ESC_pulse_duration[ESC2] = limit(m_ESC_pulse_duration[ESC2], 1100, 2000);
     m_ESC_pulse_duration[ESC3] = limit(m_ESC_pulse_duration[ESC3], 1100, 2000);
     m_ESC_pulse_duration[ESC4] = limit(m_ESC_pulse_duration[ESC4], 1100, 2000);
-
+/*
     Serial.print(" ESC1: ");
     Serial.print(m_ESC_pulse_duration[ESC1]);
     Serial.print(" ESC2: ");
@@ -307,7 +316,7 @@ void ControllerManager::calculateESCPulses()
     Serial.print(" ESC4: ");
     Serial.print(m_ESC_pulse_duration[ESC4]);
     Serial.println(" ");
-}
+*/}
 
 //##################################################################
 //  Function for generating ESC pulses and reading measurements
@@ -328,7 +337,11 @@ void ControllerManager::calculateESCPulses()
 void ControllerManager::generateESCPulses()
 {
   
-    m_ESC_pulse_start_time = micros();  // the start time of the elapsed time
+  m_ESC1.write(map(m_ESC_pulse_duration[ESC1], 1000, 2000 , 0 , 180));    // Send the signal to the ESC
+  m_ESC2.write(map(m_ESC_pulse_duration[ESC2], 1000, 2000 , 0 , 180));    // scale it to use it with the servo library (value between 0 and 180)
+  m_ESC3.write(map(m_ESC_pulse_duration[ESC3], 1000, 2000 , 0 , 180));
+  m_ESC4.write(map(m_ESC_pulse_duration[ESC4], 1000, 2000 , 0 , 180));
+   /* m_ESC_pulse_start_time = micros();  // the start time of the elapsed time
                                       // counter is updated
 
     PORTD |= B11110000; // all outputs connected to the ESCs are set to "1"
@@ -362,5 +375,5 @@ void ControllerManager::generateESCPulses()
         if(m_ESC_pulse_end_time[ESC4] <= m_present_time) PORTD &= B01111111;
       
     }
-    
+    */
 }
