@@ -38,6 +38,7 @@ public:
   float const * const getSetPoints() const;
 
   byte getButton1() const;
+  byte getTSwitch2() const;
 private:
 
 void initializeReceiver();

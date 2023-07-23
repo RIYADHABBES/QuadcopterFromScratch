@@ -16,7 +16,7 @@ void setup(int a) {
 
   Serial.println("\n Setup ended ");
   Serial.println("***************************\n\n");
-time_storage = micros();
+//time_storage = micros();
 }
 
 void loop(int b) {
@@ -24,8 +24,8 @@ void loop(int b) {
 
   mpu6050Manager->calculateAnglesFusion();
 
-  mpu6050Manager->set_dT(micros() - time_storage);
-  time_storage = micros();
+  // mpu6050Manager->set_dT(micros() - time_storage);
+  // time_storage = micros();
 
   mpu6050Manager->readMPU6050();
 

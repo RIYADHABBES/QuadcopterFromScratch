@@ -286,6 +286,12 @@ byte JoyPadManager::getButton1() const
 {
   return m_data.button1;
 }
+
+byte JoyPadManager::getTSwitch2() const
+{
+  return m_data.tSwitch2;
+}
+
 void JoyPadManager::printSetPoints()
 {
  // Print the set points in the Serial Monitor

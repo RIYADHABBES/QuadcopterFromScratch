@@ -311,7 +311,7 @@ float limit(float value, float min_value, float max_value); // function to limit
 //#######################################################
 //####                     SETUP()                   ####
 //#######################################################
-void setup() 
+void setup(int a) 
 {  
     configureOutputs(); // configuration of the pins used as outputs 
 
@@ -344,7 +344,7 @@ void setup()
 //####                    LOOP()                  ####
 //####################################################
 
-void loop() 
+void loop(int a) 
 {
         // take the start time of the "loop()" to manage the loop duration
         loop_start = micros();   

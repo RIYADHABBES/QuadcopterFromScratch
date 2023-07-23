@@ -32,7 +32,9 @@ private:
  
 // Attributes 
 
-/*Needed*/unsigned long m_dT = 1; // variable for calculating the elapsed time between 2 MPU6050 readings
+  unsigned long m_time_storage = 0; // memorization variable of the present moment
+  unsigned long m_dT = 1; // variable for calculating the elapsed time between 2 MPU6050 readings
+  
   int m_temperature = 0;
 
   int m_accel_raw[3] = {0,0,0};  // // table of raw accelerations

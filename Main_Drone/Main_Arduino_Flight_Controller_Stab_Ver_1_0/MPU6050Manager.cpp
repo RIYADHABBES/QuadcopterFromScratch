@@ -39,6 +39,7 @@ MPU6050Manager::MPU6050Manager(){
 
   calibrateMPU6050();
 
+  time_storage = micros();
   readMPU6050();
 
 }
@@ -261,6 +262,8 @@ void MPU6050Manager::calculateAnglesFusion()
   
     m_angle_gyro[PITCH] -= m_angle_gyro[ROLL] * sin(m_gyro[YAW]*(m_dT/(float)1000000)*0.0174533);
 
+    m_dT = (micros() - time_storage);
+    time_storage = micros();
     //------------------------------------------------
     // calculation of angles from accelerometer data
     //------------------------------------------------
@@ -274,8 +277,8 @@ void MPU6050Manager::calculateAnglesFusion()
     
     if(m_init_gyro_angles)
     { 
-        m_angle[ROLL] = 0.9996*m_angle_gyro[ROLL]+0.0004*m_angle_accel[ROLL];
-        m_angle[PITCH] = 0.9996*m_angle_gyro[PITCH]+0.0004*m_angle_accel[PITCH];     
+        m_angle[ROLL] = 0.96*m_angle_gyro[ROLL]+0.04*m_angle_accel[ROLL];//0.9996*m_angle_gyro[ROLL]+0.0004*m_angle_accel[ROLL];
+        m_angle[PITCH] = 0.96*m_angle_gyro[PITCH]+0.04*m_angle_accel[PITCH];//0.9996*m_angle_gyro[PITCH]+0.0004*m_angle_accel[PITCH];     
     }
     else
     {

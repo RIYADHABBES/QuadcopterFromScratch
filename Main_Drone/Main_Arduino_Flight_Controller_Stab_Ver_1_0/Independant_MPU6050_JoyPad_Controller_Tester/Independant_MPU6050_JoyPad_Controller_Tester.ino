@@ -30,7 +30,7 @@ void setup(int a) {
 
   Serial.println("\n Setup ended ");
   Serial.println("***************************\n\n");
-time_storage = micros();
+//time_storage = micros();
 }
 
 void loop(int b) {
@@ -40,8 +40,8 @@ void loop(int b) {
 
   joyPadManager->calculateSetpoints(mpu6050Manager->getRollAdjustment(),mpu6050Manager->getPitchAdjustment());
 
-  float *setpoint = joyPadManager->getSetPoints();
-  float *gyro = mpu6050Manager->getGyro();
+  const float *setpoint = joyPadManager->getSetPoints();
+  const float *gyro = mpu6050Manager->getGyro();
   
   controllerManager->setSetPoints(setpoint);
   controllerManager->setGyro(gyro);
@@ -49,11 +49,16 @@ void loop(int b) {
   controllerManager->calculatePIDCommands();  
   
   controllerManager->calculateESCPulses();
-
-  controllerManager->generateESCPulses();
-
-  mpu6050Manager->set_dT(micros() - time_storage);
-  time_storage = micros();
+  if(!joyPadManager->getTSwitch2())
+  {
+    controllerManager->generateESCPulses();
+  }
+  else
+  {
+    controllerManager->stopMotors();
+  }
+//  mpu6050Manager->set_dT(micros() - time_storage);
+//  time_storage = micros();
 
   mpu6050Manager->readMPU6050();
   joyPadManager->readRadio();
