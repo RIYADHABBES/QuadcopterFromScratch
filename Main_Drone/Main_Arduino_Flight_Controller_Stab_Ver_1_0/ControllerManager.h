@@ -23,7 +23,7 @@ class ControllerManager{
   }
   
   void calculatePIDCommands();  // calculation of PID corrections
-  void calculateESCPulses();    // calculation of PWM pulse durations to be sent to the ESCs
+  void calculateESCPulses(bool printESCPulses = false);    // calculation of PWM pulse durations to be sent to the ESCs
   void generateESCPulses();     // generation of ESC pulses and reading of MPU-6050 measurements
 
   void stopMotors();            // sets the pulse duration of the ESCs to 1000 (minimum value)

@@ -241,7 +241,7 @@ void ControllerManager::calculatePIDCommands()
     //--------------------------------------------
 
     // complete PID correction in YAW
-    m_PID_correction[YAW] =  m_P_correction[YAW] + m_I_correction[YAW] + m_D_correction[YAW];
+    m_PID_correction[YAW] =  m_P_correction[YAW] + m_I_correction[YAW] + 0 * m_D_correction[YAW];
 
     // PID correction value boundary
     m_PID_correction[YAW]=limit(m_PID_correction[YAW], -m_PID_limit[YAW], m_PID_limit[YAW]);
@@ -287,7 +287,7 @@ float ControllerManager::limit(float value, float min_value, float max_value)
 //  - no value returned
 //
 //###############################################
-void ControllerManager::calculateESCPulses()
+void ControllerManager::calculateESCPulses(bool printESCPulses)
 {
     //---------------------
     // PID command mixing
@@ -306,17 +306,20 @@ void ControllerManager::calculateESCPulses()
     m_ESC_pulse_duration[ESC2] = limit(m_ESC_pulse_duration[ESC2], 1100, 2000);
     m_ESC_pulse_duration[ESC3] = limit(m_ESC_pulse_duration[ESC3], 1100, 2000);
     m_ESC_pulse_duration[ESC4] = limit(m_ESC_pulse_duration[ESC4], 1100, 2000);
-/*
-    Serial.print(" ESC1: ");
-    Serial.print(m_ESC_pulse_duration[ESC1]);
-    Serial.print(" ESC2: ");
-    Serial.print(m_ESC_pulse_duration[ESC2]);
-    Serial.print(" ESC3: ");
-    Serial.print(m_ESC_pulse_duration[ESC3]);
-    Serial.print(" ESC4: ");
-    Serial.print(m_ESC_pulse_duration[ESC4]);
-    Serial.println(" ");
-*/}
+
+    if(printESCPulses)
+    {  
+      Serial.print("ESC1: ");
+      Serial.print(m_ESC_pulse_duration[ESC1]);
+      Serial.print(" ESC2: ");
+      Serial.print(m_ESC_pulse_duration[ESC2]);
+      Serial.print(" ESC3: ");
+      Serial.print(m_ESC_pulse_duration[ESC3]);
+      Serial.print(" ESC4: ");
+      Serial.print(m_ESC_pulse_duration[ESC4]);
+      Serial.println(" ");
+    }
+}
 
 //##################################################################
 //  Function for generating ESC pulses and reading measurements
