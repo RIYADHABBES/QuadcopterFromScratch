@@ -15,7 +15,7 @@ JoyPadManager* joyPadManager = nullptr;
 ControllerManager* controllerManager = nullptr;
 
 void setup(int a) {
-   Serial.begin(9600);
+  Serial.begin(9600);
   // put your setup code here, to run once:
   Serial.println("***************************");
   Serial.println("Welcom to MPU6050 + JoyPad Tester :) ");
@@ -48,20 +48,22 @@ void loop(int b) {
   
   controllerManager->calculatePIDCommands();  
   
-  controllerManager->calculateESCPulses();
-  if(!joyPadManager->getTSwitch2())
-  {
-    controllerManager->generateESCPulses();
-  }
-  else
+  controllerManager->calculateESCPulses(false);
+  if(joyPadManager->getTSwitch2())
   {
     controllerManager->stopMotors();
   }
+  else
+  {
+    controllerManager->generateESCPulses();
+  }
+  
 //  mpu6050Manager->set_dT(micros() - time_storage);
 //  time_storage = micros();
 
   mpu6050Manager->readMPU6050();
   joyPadManager->readRadio();
   
-  Serial.print((micros()-loop_start) / 1000.0);
+  mpu6050Manager->printAngles();
+  // Serial.print((micros()-loop_start) / 1000.0);
 }
