@@ -56,6 +56,12 @@ void MPU6050Manager::initializeMPU6050() {
   Wire.write(0x10);
   Wire.endTransmission();
 
+  // Set DLPF to ~20Hz (cut off high-frequency noise)
+  Wire.beginTransmission(MPU_ADDRESS);
+  Wire.write(0x1A); // CONFIG register
+  Wire.write(0x04); // DLPF setting (20Hz bandwidth, 1kHz rate)
+  Wire.endTransmission();
+
   delay(250);
   Serial.println("MPU6050 had been initialized !");
 }
@@ -122,48 +128,75 @@ void MPU6050Manager::readMPU6050() {
 }
 
 void MPU6050Manager::calculateAnglesFusion() {
-  unsigned long current_time = micros();
-  float dt = (current_time - m_time_storage) / 1000000.0f;
-  m_time_storage = current_time;
+    // Calculate time delta in seconds
+    unsigned long currentTime = micros();
+    float dt = (currentTime - m_time_storage) / 1000000.0f;
+    m_time_storage = currentTime;
 
-  // Remove offsets and scale
-  float gyroX = (m_gyro_raw[ROLL] - m_gyro_offset[ROLL]) / SF_Gyro;
-  float gyroY = (m_gyro_raw[PITCH] - m_gyro_offset[PITCH]) / SF_Gyro;
-  float gyroZ = (m_gyro_raw[YAW] - m_gyro_offset[YAW]) / SF_Gyro;
+    // Raw angular velocity (deg/s)
+    float rawGyroX = (m_gyro_raw[ROLL]  - m_gyro_offset[ROLL])  / SF_Gyro;
+    float rawGyroY = (m_gyro_raw[PITCH] - m_gyro_offset[PITCH]) / SF_Gyro;
+    float rawGyroZ = (m_gyro_raw[YAW]   - m_gyro_offset[YAW])   / SF_Gyro;
 
-  float accelX = (m_accel_raw[X] - m_accel_offset[X]) / SF_Accel;
-  float accelY = (m_accel_raw[Y] - m_accel_offset[Y]) / SF_Accel;
-  float accelZ = (m_accel_raw[Z] - m_accel_offset[Z]) / SF_Accel;
+    // Low-pass filter: smoother gyro angular velocities
+    const float smoothing = 0.7f;
 
-  // Integrate gyro angles
-  m_angle_gyro[ROLL] += gyroX * dt;
-  m_angle_gyro[PITCH] += gyroY * dt;
-  m_angle_gyro[YAW] += gyroZ * dt;
+    m_gyro[ROLL]  = smoothing * m_gyro[ROLL]  + (1 - smoothing) * rawGyroX;
+    m_gyro[PITCH] = smoothing * m_gyro[PITCH] + (1 - smoothing) * rawGyroY;
+    m_gyro[YAW]   = smoothing * m_gyro[YAW]   + (1 - smoothing) * rawGyroZ;
 
-  // Compute accel angles
-  float accelAngleX = atan2(accelY, sqrt(accelX * accelX + accelZ * accelZ)) * 180 / PI;
-  float accelAngleY = atan2(-accelX, sqrt(accelY * accelY + accelZ * accelZ)) * 180 / PI;
+    // Deadband: suppress tiny twitchy values
+    if (abs(m_gyro[ROLL])  < 0.2f) m_gyro[ROLL] = 0;
+    if (abs(m_gyro[PITCH]) < 0.2f) m_gyro[PITCH] = 0;
+    if (abs(m_gyro[YAW])   < 0.2f) m_gyro[YAW]   = 0;
 
-  const float alpha = 0.98;
-  if (m_init_gyro_angles) {
-    m_angle[ROLL] = alpha * (m_angle[ROLL] + gyroX * dt) + (1 - alpha) * accelAngleX;
-    m_angle[PITCH] = alpha * (m_angle[PITCH] + gyroY * dt) + (1 - alpha) * accelAngleY;
-  } else {
-    m_angle[ROLL] = accelAngleX;
-    m_angle[PITCH] = accelAngleY;
-    m_init_gyro_angles = true;
-  }
+    // Accelerometer: convert to g
+    float accelX = (m_accel_raw[X] - m_accel_offset[X]) / SF_Accel;
+    float accelY = (m_accel_raw[Y] - m_accel_offset[Y]) / SF_Accel;
+    float accelZ = (m_accel_raw[Z] - m_accel_offset[Z]) / SF_Accel;
 
-  m_angle[YAW] = m_angle_gyro[YAW]; // YAW from gyro only
+    // Store scaled accel values
+    m_accel[X] = accelX;
+    m_accel[Y] = accelY;
+    m_accel[Z] = accelZ;
 
-  m_roll_adjustment = m_angle[ROLL] * stabilization_coeff;
-  m_pitch_adjustment = m_angle[PITCH] * stabilization_coeff;
+    // Compute roll & pitch from accelerometer
+    float accelAngleX = atan2(accelY, sqrt(accelX * accelX + accelZ * accelZ)) * RAD_TO_DEG;
+    float accelAngleY = atan2(-accelX, sqrt(accelY * accelY + accelZ * accelZ)) * RAD_TO_DEG;
 
-  if (!m_selflevel_mode) {
-    m_roll_adjustment = 0;
-    m_pitch_adjustment = 0;
-  }
+    m_angle_accel[ROLL]  = accelAngleX;
+    m_angle_accel[PITCH] = accelAngleY;
+
+    // Integrate filtered gyro values
+    m_angle_gyro[ROLL]  += m_gyro[ROLL]  * dt;
+    m_angle_gyro[PITCH] += m_gyro[PITCH] * dt;
+    m_angle_gyro[YAW]   += m_gyro[YAW]   * dt;
+
+    // Sensor fusion using complementary filter
+    const float alpha = 0.98f;
+
+    if (m_init_gyro_angles) {
+        m_angle[ROLL]  = alpha * (m_angle[ROLL]  + m_gyro[ROLL]  * dt) + (1 - alpha) * accelAngleX;
+        m_angle[PITCH] = alpha * (m_angle[PITCH] + m_gyro[PITCH] * dt) + (1 - alpha) * accelAngleY;
+    } else {
+        m_angle[ROLL]  = accelAngleX;
+        m_angle[PITCH] = accelAngleY;
+        m_init_gyro_angles = true;
+    }
+
+    // Yaw angle from gyro only
+    m_angle[YAW] = m_angle_gyro[YAW];
+
+    // Apply stabilization correction
+    m_roll_adjustment = m_angle[ROLL] * stabilization_coeff;
+    m_pitch_adjustment = m_angle[PITCH] * stabilization_coeff;
+
+    if (!m_selflevel_mode) {
+        m_roll_adjustment = 0;
+        m_pitch_adjustment = 0;
+    }
 }
+
 
 float const * const MPU6050Manager::getGyro() const {
   return m_gyro;
@@ -186,4 +219,19 @@ void MPU6050Manager::printAngles() {
   Serial.print(",");
   Serial.print("YAW:");
   Serial.println(m_angle[YAW]);
+}
+
+void MPU6050Manager::printAnglularVelocity() {
+  Serial.print("Angular Velocity [deg/s] => ");
+  
+  Serial.print("ROLL:");
+  Serial.print(m_gyro[ROLL]);  
+  Serial.print(",");
+  
+  Serial.print("PITCH:");
+  Serial.print(m_gyro[PITCH]);
+  Serial.print(",");
+
+  Serial.print("YAW:");
+  Serial.println(m_gyro[YAW]);
 }

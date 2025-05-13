@@ -20,6 +20,7 @@ public:
   float getPitchAdjustment() const;
   
   void printAngles();
+  void printAnglularVelocity();
 private:
 
   void initializeMPU6050(); // MPU6050 circuit initialization function by I2C

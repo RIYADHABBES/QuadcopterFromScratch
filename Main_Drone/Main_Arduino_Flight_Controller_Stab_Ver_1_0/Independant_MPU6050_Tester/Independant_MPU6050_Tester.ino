@@ -1,11 +1,15 @@
 #include "C:/Users/noufe/OneDrive/Bureau/QuadcopterFromScratch/Main_Drone/Main_Arduino_Flight_Controller_Stab_Ver_1_0/MPU6050Manager.h"
 #include "C:/Users/noufe/OneDrive/Bureau/QuadcopterFromScratch/Main_Drone/Main_Arduino_Flight_Controller_Stab_Ver_1_0/MPU6050Manager.cpp"
 
+#include <BasicLinkedList.h>
+
+LinkedList<int> myList;
+
 MPU6050Manager* mpu6050Manager = nullptr;
 unsigned long time_storage; // memorization variable of the present moment
 
 void setup(int a) {
-   Serial.begin(9600);
+  Serial.begin(9600);
   // put your setup code here, to run once:
   Serial.println("***************************");
   Serial.println("Welcom to MPU6050 Tester :) ");
@@ -29,5 +33,7 @@ void loop(int b) {
 
   mpu6050Manager->readMPU6050();
 
-  mpu6050Manager->printAngles();
+  //mpu6050Manager->printAngles();
+  mpu6050Manager->printAnglularVelocity();
+
 }
